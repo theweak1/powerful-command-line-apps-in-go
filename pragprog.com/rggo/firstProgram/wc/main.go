@@ -12,7 +12,7 @@ func main() {
 	// Define a boolean flag -l to count lines instead of words
 	lines := flag.Bool("l", false, "Count lines")
 
-	bytes := flag.Bool("b",false, "Count bytes")
+	bytes := flag.Bool("b", false, "Count bytes")
 	// Parsing the flags provided by the user
 	flag.Parse()
 
@@ -28,8 +28,9 @@ func count(r io.Reader, countLines, countBytes bool) int {
 	// If the count lines flag is not set, we want to count words so we define the scanner split type to words (default is split by lines)
 	if !countLines {
 		scanner.Split(bufio.ScanWords)
-	}
+	}/
 
+	// If the count bytes flag is set, we want to count bytes so we define the scanner split type to bytes (default is split by lines)
 	if countBytes {
 		scanner.Split(bufio.ScanBytes)
 	}
