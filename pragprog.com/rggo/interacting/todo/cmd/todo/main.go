@@ -1,17 +1,36 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
-	"strings"
 
 	"pragprog.com/rggo/interacting/todo"
 )
 
 // Hardcoding the file name
-const todoFilename = ".todo.json"
+var todoFilename = ".todo.json"
 
 func main() {
+
+	flag.Usage = func() {
+		fmt.Fprintf(flag.CommandLine.Output(), "%s tool. Developed for the Pragmatic Bookshelf\n", os.Args[0])
+		fmt.Fprintf(flag.CommandLine.Output(), "Copyright 2020\n")
+		fmt.Fprintln(flag.CommandLine.Output(), "Usage information:")
+		flag.PrintDefaults()
+	}
+	// Parsing command line flags
+	task := flag.String("task", "", "Task to be included in the ToDo list")
+	list := flag.Bool("list", false, "List all tasks")
+	complete := flag.Int("complete", 0, "Item to be completed")
+
+	flag.Parse()
+
+	// Check if the user defined the ENV VAR for a custom file name
+	if os.Getenv("TODO_FILENAME") != "" {
+		todoFilename = os.Getenv("TODO_FILENAME")
+	}
+
 	// Define an items list
 	l := &todo.List{}
 
@@ -24,25 +43,36 @@ func main() {
 	// Decide what todo based on the number of arguments provided
 	switch {
 	// For no extra arguments, print the list
-	case len(os.Args) == 1:
+	case *list:
 		// List current todo items
-		for _, item := range *l {
-			fmt.Println(item.Task)
+		fmt.Print(l)
+
+	case *complete > 0:
+		// Complete the given item
+		if err := l.Complete(*complete); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
 		}
-
-		// Concatenate all provided arguments with a space and
-		// add to the list as an item
-	default:
-		// Concatenate all arguments with a space
-		item := strings.Join(os.Args[1:], " ")
-
-		// Add the task
-		l.Add(item)
 
 		// Save the new list
 		if err := l.Save(todoFilename); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
+
+	case *task != "":
+		// Add the task
+		l.Add(*task)
+
+		// Save the new list
+		if err := l.Save(todoFilename); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+
+	default:
+		// Invalid flag provided
+		fmt.Fprintln(os.Stderr, "Invalid option")
+		os.Exit(1)
 	}
 }
