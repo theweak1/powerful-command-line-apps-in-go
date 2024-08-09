@@ -36,6 +36,35 @@ func (l *List) String() string {
 	return formatted
 }
 
+func (l *List) Verbose() string {
+	formatted := ""
+
+	for k, t := range *l {
+		prefix := "  "
+		if t.Done {
+			prefix = "X "
+		}
+
+		// Adjust the item number k to print numbers starting from 1 instead of 0
+		formatted += fmt.Sprintf("%s%d: %s	%s\n", prefix, k+1, t.Task, t.CreatedAt.Format("2006-01-02 15:04"))
+	}
+	return formatted
+}
+
+func (l *List) Pend() string {
+	formatted := ""
+
+	for k, t := range *l {
+		prefix := "  "
+		if !t.Done {
+			// Adjust the item number k to print numbers starting from 1 instead of 0
+			formatted += fmt.Sprintf("%s%d: %s\n", prefix, k+1, t.Task)
+		}
+
+	}
+	return formatted
+}
+
 // Add creates a new todo item and appends it to the list
 func (l *List) Add(task string) {
 	t := item{
@@ -49,7 +78,7 @@ func (l *List) Add(task string) {
 }
 
 // Complete method marks a ToDo item as completed by
-// setting DOne = true and CompletedAt to the current time
+// setting Done = true and CompletedAt to the current time
 func (l *List) Complete(i int) error {
 	ls := *l
 	if i <= 0 || i > len(ls) {
