@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"flag"
 	"fmt"
 	"io"
@@ -11,19 +12,59 @@ import (
 func main() {
 	// Define a boolean flag -l to count lines instead of words
 	lines := flag.Bool("l", false, "Count lines")
-
 	bytes := flag.Bool("b", false, "Count bytes")
+
 	// Parsing the flags provided by the user
 	flag.Parse()
 
-	// Calling the count function to count the number of words (or lines)
-	// received from the Standard Input and printing it out
-	fmt.Println(count(os.Stdin, *lines, *bytes))
+	// Get the remaining command-Line arguments (files)
+	files := flag.Args() // This captures any filenames provided after the flags
+
+	//If no files are provided, us STDIN
+	if len(files) == 0 {
+		out, err := count("", os.Stdin, *lines, *bytes)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "%s", err)
+			os.Exit(1)
+		}
+		fmt.Println(out)
+	} else {
+
+		total := 0
+
+		// process each file
+		for _, file := range files {
+			out, err := count(file, nil, *lines, *bytes)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error processig file %s: %s\n", file, err)
+				continue
+			}
+			fmt.Printf("%s: %d\n", file, out)
+			total += out
+		}
+		// Print the total count if more than one file is provided
+		if len(files) > 1 {
+			fmt.Printf("Total: %d\n", total)
+		}
+	}
 }
 
-func count(r io.Reader, countLines, countBytes bool) int {
+func count(Fname string, r io.Reader, countLines, countBytes bool) (int, error) {
+	var reader io.Reader
+
+	reader = r
+
+	// Check if a file is being provided
+	if Fname != "" {
+		data, err := os.ReadFile(Fname)
+		if err != nil {
+			return 0, err
+		}
+		reader = bytes.NewReader(data)
+	}
+
 	// A scanner is used to read text from a Reader (such as files)
-	scanner := bufio.NewScanner(r)
+	scanner := bufio.NewScanner(reader)
 
 	// If the count lines flag is not set, we want to count words so we define the scanner split type to words (default is split by lines)
 	if !countLines {
@@ -43,6 +84,11 @@ func count(r io.Reader, countLines, countBytes bool) int {
 		wc++
 	}
 
+	// Check for any scanning errors
+	if err := scanner.Err(); err != nil {
+		return 0, err
+	}
+
 	// Return the total
-	return wc
+	return wc, nil
 }
